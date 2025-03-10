@@ -37,7 +37,6 @@ typedef struct _kvpair {
 typedef struct _hashtable {
     size_t      size;
     hashfunc    *hf;
-    // cleanupfunc *cf;
     kvpair      **kvpairs;
 } hash_table;
 
@@ -58,8 +57,6 @@ hash_table *hash_table_init(size_t size, hashfunc *hf)
 
 bool hash_table_insert(hash_table *ht, const char *key, void *obj)
 {
-    assert((ht != NULL) && (key != NULL) && (obj != NULL));
-
     if ((ht == NULL) || (key == NULL) || (obj == NULL)) return false;
 
     if (hash_table_get(ht, key) != NULL) return false;
@@ -73,6 +70,10 @@ bool hash_table_insert(hash_table *ht, const char *key, void *obj)
         .key = strdup(key),
         .obj = obj
     };
+    if (kvp->key == NULL) {
+        free(kvp);
+        return false;  // strdup failed
+    }
 
     kvp->next = ht->kvpairs[index];
     ht->kvpairs[index] = kvp;
@@ -108,7 +109,6 @@ void hash_table_destroy(hash_table *ht, cleanupfunc *cf)
 
 void *hash_table_delete(hash_table *ht, const char *key)
 {
-    assert((ht != NULL) && (key != NULL));
     if ((ht == NULL) || (key == NULL)) return NULL;
 
     uint32_t index = ht->hf(key, strlen(key)) % ht->size;
@@ -132,8 +132,7 @@ void *hash_table_delete(hash_table *ht, const char *key)
 
 void *hash_table_get(hash_table *ht, const char *key)
 {
-    assert((ht != NULL) && (key != NULL));
-    if ((ht == NULL) || (key == NULL)) return false;
+    if ((ht == NULL) || (key == NULL)) return NULL;
 
     uint32_t index = ht->hf(key, strlen(key)) % ht->size;
 
