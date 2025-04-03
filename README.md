@@ -1,7 +1,7 @@
 # Hashtable Project
 
 ## Table of Contents
-- [Hashmap Project](#hashmap-project)
+- [Hashtable Project](#hashmap-project)
   - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
   - [Requirements](#requirements)
