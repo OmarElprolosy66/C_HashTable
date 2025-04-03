@@ -1,4 +1,4 @@
-# Hashmap Project
+# Hashtable Project
 
 ## Table of Contents
 - [Hashmap Project](#hashmap-project)
