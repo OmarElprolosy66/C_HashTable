@@ -11,7 +11,12 @@ uint64_t simple_hash(const char *key, size_t len) {
 }
 
 void test_insert() {
-    hash_table *ht = hash_table_init(1, simple_hash);
+    hash_table *ht = hash_table_init(10, simple_hash);
+    if (ht == NULL) {
+        printf("Failed to initialize hash table\n");
+        return;
+    }
+
     if (hash_table_insert(ht, "key1", "value1")) {
         printf("Insert test passed\n");
     } else {
@@ -23,6 +28,7 @@ void test_insert() {
     } else {
         printf("Get test failed\n");
     }
+
     hash_table_destroy(ht, NULL);
 }
 

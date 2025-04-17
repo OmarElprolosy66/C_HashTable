@@ -35,21 +35,28 @@ typedef struct _kvpair {
 
 typedef struct _hashtable {
     size_t      size;
+    size_t      capacity;
     hashfunc    *hf;
     kvpair      **kvpairs;
 } hash_table;
 
-hash_table *hash_table_init(size_t size, hashfunc *hf)
+hash_table *hash_table_init(size_t capacity, hashfunc *hf)
 {
     hash_table *ht = (hash_table *)malloc(sizeof(hash_table));
     if (ht == NULL) return NULL;
+    
+    if (capacity == 0) capacity = 1;
 
     *ht = (hash_table) {
-        .size    = size,
-        .hf      = hf,
-        .kvpairs = (kvpair **)calloc(sizeof(kvpair *), size)
+        .capacity = capacity,
+        .hf       = hf,
+        .kvpairs  = (kvpair **)calloc(sizeof(kvpair *), capacity)
     };
-    if (ht->kvpairs == NULL) return NULL;
+    if (ht->kvpairs == NULL) {
+        free(ht);
+        ht = NULL;
+        return NULL;
+    }
 
     return ht;
 }
@@ -58,9 +65,33 @@ bool hash_table_insert(hash_table *ht, const char *key, void *obj)
 {
     if ((ht == NULL) || (key == NULL) || (obj == NULL)) return false;
 
+    if ((float)ht->size / ht->capacity) {
+        size_t old_capacity  = ht->capacity;
+        ht->capacity         = ht->capacity * 2;
+        kvpair **new_kvpairs = (kvpair **)calloc(ht->capacity, sizeof(kvpair *));
+        if (new_kvpairs == NULL) return false;    
+
+        // Rehash existing key-value pairs
+        for (size_t i = 0; i < old_capacity; i++) {
+            kvpair *tmp = ht->kvpairs[i];
+            while (tmp != NULL) {
+                kvpair *next = tmp->next;
+
+                uint32_t new_index = ht->hf(tmp->key, strlen(tmp->key)) % ht->capacity;
+                tmp->next = new_kvpairs[new_index];
+                new_kvpairs[new_index] = tmp;
+
+                tmp = next;
+            }
+        }
+
+        free(ht->kvpairs);
+        ht->kvpairs = new_kvpairs;
+    }
+
     if (hash_table_get(ht, key) != NULL) return false;
 
-    uint32_t index = ht->hf(key, strlen(key)) % ht->size;
+    uint32_t index = ht->hf(key, strlen(key)) % ht->capacity;
 
     kvpair *kvp = (kvpair *)malloc(sizeof(kvpair));
     if (kvp == NULL) return false;
@@ -76,6 +107,7 @@ bool hash_table_insert(hash_table *ht, const char *key, void *obj)
 
     kvp->next = ht->kvpairs[index];
     ht->kvpairs[index] = kvp;
+    ht->size++;
 
     return true;
 }
@@ -110,7 +142,7 @@ void *hash_table_delete(hash_table *ht, const char *key)
 {
     if ((ht == NULL) || (key == NULL)) return NULL;
 
-    uint32_t index = ht->hf(key, strlen(key)) % ht->size;
+    uint32_t index = ht->hf(key, strlen(key)) % ht->capacity;
 
     kvpair *tmp  = ht->kvpairs[index];
     kvpair *prev = NULL;
@@ -126,6 +158,7 @@ void *hash_table_delete(hash_table *ht, const char *key)
     void *result = tmp->obj;
     free(tmp); tmp = NULL;
 
+    ht->size--;
     return result; // user desides how to free the obj.
 }
 
@@ -133,7 +166,7 @@ void *hash_table_get(hash_table *ht, const char *key)
 {
     if ((ht == NULL) || (key == NULL)) return NULL;
 
-    uint32_t index = ht->hf(key, strlen(key)) % ht->size;
+    uint32_t index = ht->hf(key, strlen(key)) % ht->capacity;
 
     kvpair *tmp = ht->kvpairs[index];
     while (tmp != NULL && strcmp(tmp->key, key) != 0) {

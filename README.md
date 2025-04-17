@@ -1,7 +1,7 @@
 # Hashtable Project
 
 ## Table of Contents
-- [Hashtable Project](#hashmap-project)
+- [Hashtable Project](#hashtable-project)
   - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
   - [Requirements](#requirements)
@@ -33,13 +33,19 @@ To build the project, run the following command:
 ```sh
 make
 ```
+This will generate:
+
+- A static library: libhashmap.a
+- A dynamic library: libhashmap.dll (on Windows) or libhashmap.so (on Linux)
+- A test executable: test_hashtable.exe (on Windows) or test_hashtable (on Linux)
 ## Running the Tests
 ```sh
 make run_test
 ```
+This will compile and run the test_hashtable.c file, which contains unit tests for the hashtable implementation.
 ## Usage
 ### Hashtable Functions
-- hash_table* hash_table_init(size_t size, hashfunc *hf): Creates a new hashtable.
+- hash_table* hash_table_init(size_t capacity, hashfunc *hf): Creates a new hashtable.
 - bool hash_table_insert(hash_table *ht, const char *key, void *obj): Inserts a key-value pair into the hashtable.
 - void* hash_table_get(hash_table *ht, const char *key): Retrieves the value associated with a key.
 - void* hash_table_delete(hash_table *ht, const char *key): Removes a key-value pair from the hashtable.
@@ -60,15 +66,24 @@ unsigned int simple_hash(const char *key) {
 }
 
 int main() {
+    // Initialize the hashtable
     hash_table *ht = hash_table_init(10, simple_hash);
 
+    // Insert key-value pairs
     hash_table_insert(ht, "key1", "value1");
-    printf("Inserted key1: %s\n", (char*)hash_table_get(ht, "key1"));
+    hash_table_insert(ht, "key2", "value2");
 
+    // Retrieve values
+    printf("key1: %s\n", (char *)hash_table_get(ht, "key1"));
+    printf("key2: %s\n", (char *)hash_table_get(ht, "key2"));
+
+    // Delete a key-value pair
     hash_table_delete(ht, "key1");
-    printf("Deleted key1: %s\n", (char*)hash_table_get(ht, "key1"));
+    printf("key1 after deletion: %s\n", (char *)hash_table_get(ht, "key1"));
 
+    // Destroy the hashtable
     hash_table_destroy(ht, NULL);
+
     return 0;
 }
 ```
@@ -85,4 +100,4 @@ gcc -o your_program your_program.c -L. -lhashmap -Wl,-rpath,.
 ```
 
 ## License
-This project is licensed under the GPL License. See the LICENSE file for more details.
+This project is licensed under the GPL License. See the [License](LICENSE) file for more details.
