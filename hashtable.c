@@ -65,7 +65,7 @@ bool hash_table_insert(hash_table *ht, const char *key, void *obj)
 {
     if ((ht == NULL) || (key == NULL) || (obj == NULL)) return false;
 
-    if ((float)ht->size / ht->capacity) {
+    if ((float)ht->size / ht->capacity > 0.75) {
         size_t old_capacity  = ht->capacity;
         ht->capacity         = ht->capacity * 2;
         kvpair **new_kvpairs = (kvpair **)calloc(ht->capacity, sizeof(kvpair *));
@@ -78,6 +78,8 @@ bool hash_table_insert(hash_table *ht, const char *key, void *obj)
                 kvpair *next = tmp->next;
 
                 uint32_t new_index = ht->hf(tmp->key, strlen(tmp->key)) % ht->capacity;
+                assert(new_index < ht->capacity); // Ensure the index is within bounds
+
                 tmp->next = new_kvpairs[new_index];
                 new_kvpairs[new_index] = tmp;
 
@@ -120,7 +122,7 @@ bool hash_table_insert(hash_table *ht, const char *key, void *obj)
  */
 void hash_table_destroy(hash_table *ht, cleanupfunc *cf)
 { 
-    for (uint32_t i = 0; i < ht->size; i++) {
+    for (uint32_t i = 0; i < ht->capacity; i++) {
         while (ht->kvpairs[i] != NULL) {
             kvpair *tmp    = ht->kvpairs[i];
             ht->kvpairs[i] = ht->kvpairs[i]->next;
@@ -164,7 +166,7 @@ void *hash_table_delete(hash_table *ht, const char *key)
 
 void *hash_table_get(hash_table *ht, const char *key)
 {
-    if ((ht == NULL) || (key == NULL)) return NULL;
+    if ((ht == NULL) || (key == NULL) || (ht->hf == NULL)) return NULL;
 
     uint32_t index = ht->hf(key, strlen(key)) % ht->capacity;
 
